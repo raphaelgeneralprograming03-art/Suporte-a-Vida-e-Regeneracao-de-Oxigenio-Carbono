@@ -3,137 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Módulo 4: Ensaio de Fadiga por Radiação - SROS</title>
-    <script src="https://jsdelivr.net"></script>
+    <title>SROS - Módulo de Suporte à Vida</title>
+    <style>
+        :root {
+            --bg-color: #050a0e;
+            --panel-bg: rgba(10, 25, 41, 0.7);
+            --neon-cyan: #00f0ff;
+            --neon-green: #39ff14;
+            --text-color: #ffffff;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        .hud-panel {
+            background: var(--panel-bg);
+            border: 2px solid var(--neon-cyan);
+            border-radius: 10px;
+            padding: 30px;
+            width: 450px;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        h2 {
+            text-align: center;
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 0;
+            border-bottom: 1px solid var(--neon-cyan);
+            padding-bottom: 10px;
+        }
+        .metric {
+            margin: 20px 0;
+            font-size: 1.1em;
+        }
+        .progress-bar {
+            background: #112233;
+            border: 1px solid var(--neon-cyan);
+            height: 20px;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease-in-out;
+        }
+        #o2-fill { background: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan); }
+        #co2-fill { background: #ff3333; box-shadow: 0 0 10px #ff3333; }
+        .log-box {
+            background: #020508;
+            border: 1px solid #112233;
+            height: 120px;
+            overflow-y: auto;
+            padding: 10px;
+            font-size: 0.85em;
+            color: var(--neon-green);
+            border-radius: 5px;
+        }
+        .btn-action {
+            width: 100%;
+            background: transparent;
+            border: 2px solid var(--neon-green);
+            color: var(--neon-green);
+            padding: 10px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.3s;
+            margin-top: 15px;
+        }
+        .btn-action:hover {
+            background: var(--neon-green);
+            color: #000;
+            box-shadow: 0 0 15px var(--neon-green);
+        }
+    </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen p-8 font-sans">
-    <div class="max-w-4xl mx-auto bg-slate-900 border border-amber-900/40 rounded-xl p-6 shadow-2xl">
-        <header class="border-b border-amber-800/30 pb-4 mb-6">
-            <h1 class="text-2xl font-bold text-amber-500 tracking-wide uppercase">CNT Fatigue & Ionizing Radiation Simulator</h1>
-            <p class="text-slate-400 text-sm">Degradação estrutural de nanotubos de carbono sob bombardeio de prótons e raios gama.</p>
-        </header>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div class="bg-black p-4 rounded border border-slate-800">
-                <span class="text-xs font-mono text-slate-500 block uppercase">Nível de Radiação</span>
-                <div class="text-2xl font-mono font-bold text-amber-400 mt-1" id="radLevel">450 mSv/h</div>
-            </div>
-            <div class="bg-black p-4 rounded border border-slate-800">
-                <span class="text-xs font-mono text-slate-500 block uppercase">Integridade Estrutural CNT</span>
-                <div class="text-2xl font-mono font-bold text-emerald-400 mt-1" id="integLevel">100.0%</div>
-            </div>
-            <div class="bg-black p-4 rounded border border-slate-800">
-                <span class="text-xs font-mono text-slate-500 block uppercase">Danos Acumulados</span>
-                <div class="text-2xl font-mono font-bold text-red-400 mt-1" id="dislocationCount">0 eV</div>
-            </div>
+<body>
+    <div class="hud-panel">
+        <h2>SROS // LIFE_SUPPORT</h2>
+        <div class="metric">
+            Nível de O₂ Purificado: <span id="o2-val">98%</span>
+            <div class="progress-bar"><div id="o2-fill" class="progress-fill"></div></div>
         </div>
-
-        <div class="bg-black p-4 rounded border border-slate-800 flex justify-center">
-            <canvas id="radiationCanvas" width="600" height="200" class="w-full bg-slate-950 block rounded"></canvas>
+        <div class="metric">
+            Concentração de CO₂ Expirado: <span id="co2-val">0.04%</span>
+            <div class="progress-bar"><div id="co2-fill" class="progress-fill"></div></div>
         </div>
-
-        <div class="mt-4 flex gap-4">
-            <button id="startRadiation" class="bg-amber-600 hover:bg-amber-500 text-black font-bold font-mono text-xs uppercase px-4 py-2 rounded transition-colors">Iniciar Bombardeio</button>
-            <button id="resetRadiation" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs uppercase px-4 py-2 rounded transition-colors">Resetar Estrutura</button>
+        <div class="metric" style="font-size: 0.9em; color: #aaa;">
+            Potência de Termólise: <span id="power-val">98.6 W</span>
         </div>
+        <div class="log-box" id="log">--- SISTEMA SROS INICIALIZADO ---</div>
+        <button class="btn-action" onclick="forcarCiclo()">Forçar Ciclo de Purificação</button>
     </div>
 
     <script>
-        const canvas = document.getElementById('radiationCanvas');
-        const ctx = canvas.getContext('2d');
-        const startBtn = document.getElementById('startRadiation');
-        const resetBtn = document.getElementById('resetRadiation');
-        const integLevel = document.getElementById('integLevel');
-        const dislocationCount = document.getElementById('dislocationCount');
+        let o2 = 98;
+        let co2 = 0.04;
+        const logBox = document.getElementById('log');
 
-        let particles = [];
-        let integrity = 100.0;
-        let totalDamageEv = 0;
-        let isSimulating = false;
-        let animationFrame;
-
-        function spawnParticle() {
-            if(!isSimulating) return;
-            particles.push({
-                x: 0,
-                y: Math.random() * canvas.height,
-                speed: Math.random() * 8 + 4,
-                energy: Math.random() * 50 + 20
-            });
+        function updateUI() {
+            document.getElementById('o2-val').innerText = o2.toFixed(2) + "%";
+            document.getElementById('co2-val').innerText = co2.toFixed(2) + "%";
+            document.getElementById('o2-fill').style.width = o2 + "%";
+            document.getElementById('co2-fill').style.width = (co2 * 20) + "%"; 
         }
 
-        function update() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Desenhar Malha CNT (linhas paralelas representando as paredes do tubo)
-            ctx.strokeStyle = `rgba(16, 185, 129, ${integrity/100})`;
-            ctx.lineWidth = 4;
-            for(let y = 30; y < canvas.height; y += 40) {
-                ctx.beginPath();
-                ctx.moveTo(150, y);
-                ctx.lineTo(550, y);
-                ctx.stroke();
-            }
-
-            // Atualizar e desenhar partículas ionizantes
-            particles.forEach((p, index) => {
-                p.x += p.speed;
-                ctx.fillStyle = '#f59e0b';
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Detecção de colisão com a área da armadura (x > 150)
-                if(p.x >= 150 && p.x <= 550) {
-                    if(Math.random() > 0.96) { // Chance de colisão atômica
-                        integrity = Math.max(0, integrity - 0.2);
-                        totalDamageEv += Math.floor(p.energy);
-                        integLevel.innerText = integrity.toFixed(1) + "%";
-                        dislocationCount.innerText = totalDamageEv + " eV";
-                        
-                        // Efeito visual de quebra
-                        ctx.fillStyle = '#ef4444';
-                        ctx.beginPath();
-                        ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
-                        ctx.fill();
-                        
-                        particles.splice(index, 1);
-                    }
-                }
-
-                if(p.x > canvas.width) particles.splice(index, 1);
-            });
-
-            if(integrity < 50) integLevel.className = "text-2xl font-mono font-bold text-amber-500 mt-1";
-            if(integrity < 20) integLevel.className = "text-2xl font-mono font-bold text-red-500 mt-1";
-
-            if(isSimulating) {
-                if(Math.random() > 0.4) spawnParticle();
-                animationFrame = requestAnimationFrame(update);
-            }
+        function addLog(text) {
+            const time = new Date().toLocaleTimeString();
+            logBox.innerHTML += `<br>[${time}] ${text}`;
+            logBox.scrollTop = logBox.scrollHeight;
         }
 
-        startBtn.addEventListener('click', () => {
-            isSimulating = !isSimulating;
-            startBtn.innerText = isSimulating ? "Pausar Bombardeio" : "Iniciar Bombardeio";
-            if(isSimulating) update();
-        });
+        function simularMetabolismo() {
+            co2 += Math.random() * 0.1;
+            o2 -= Math.random() * 0.08;
+            if(co2 > 1.5) {
+                addLog("Alerta: CO2 Elevado. Ativando quebra quântica...");
+                co2 = 0.04;
+                o2 += 1.2;
+                addLog("Sucesso: Carbono extraído e enviado para nano-grelhas.");
+            }
+            updateUI();
+        }
 
-        resetBtn.addEventListener('click', () => {
-            isSimulating = false;
-            cancelAnimationFrame(animationFrame);
-            startBtn.innerText = "Iniciar Bombardeio";
-            particles = [];
-            integrity = 100.0;
-            totalDamageEv = 0;
-            integLevel.innerText = "100.0%";
-            integLevel.className = "text-2xl font-mono font-bold text-emerald-400 mt-1";
-            dislocationCount.innerText = "0 eV";
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            update();
-        });
+        function forcarCiclo() {
+            addLog("Executando termólise assistida manual...");
+            co2 = 0.01;
+            o2 = 100;
+            updateUI();
+            addLog("Ciclo completo. O2 purificado a 100%.");
+        }
 
-        update();
+        updateUI();
+        setInterval(simularMetabolismo, 2000);
     </script>
 </body>
 </html>
